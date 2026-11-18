@@ -1,0 +1,99 @@
+{
+  "name": "reqora",
+  "version": "0.0.1",
+  "description": "Reqora (驿) — a local-first, self-hostable multi-protocol API workbench. This package ships the CLI.",
+  "license": "MIT",
+  "author": "xbeeant",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xbeeant/reqora.git"
+  },
+  "homepage": "https://github.com/xbeeant/reqora#readme",
+  "bugs": {
+    "url": "https://github.com/xbeeant/reqora/issues"
+  },
+  "keywords": [
+    "api-client",
+    "api-testing",
+    "tauri",
+    "grpc",
+    "graphql",
+    "websocket",
+    "sse",
+    "mcp",
+    "local-first"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "type": "module",
+  "bin": {
+    "reqora": "bin/reqora.mjs"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "dist-engine/",
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+    "docs/",
+    "skills/"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "tauri:dev": "tauri dev",
+    "build": "tsc && vite build",
+    "tauri:build": "tauri build",
+    "update:help": "node scripts/with-env.mjs scripts/sign-update-manifest.mjs --help",
+    "update:keygen": "node scripts/with-env.mjs scripts/sign-update-manifest.mjs --keygen",
+    "update:pubkey": "node scripts/with-env.mjs scripts/sign-update-manifest.mjs --public-key",
+    "update:sign": "node scripts/update-sign.mjs",
+    "update:verify": "node scripts/with-env.mjs scripts/sign-update-manifest.mjs --verify",
+    "update:pack": "node scripts/pack-update.mjs",
+    "release": "node scripts/release.mjs",
+    "release:sync-key": "node scripts/sync-update-trust.mjs",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "i18n:check": "node scripts/i18n-check.mjs --strict",
+    "test": "node scripts/run-tests.mjs unit",
+    "test:unit": "node scripts/run-tests.mjs unit",
+    "test:e2e": "node scripts/run-tests.mjs e2e",
+    "test:all": "node scripts/run-tests.mjs all",
+    "bench": "node scripts/bench.mjs",
+    "mirror": "node bin/git-mirror.mjs",
+    "git:sync": "node bin/git-sync.mjs",
+    "contract:gen": "node scripts/generate-contract.mjs",
+    "contract:check": "node scripts/generate-contract.mjs --check",
+    "test:evidence": "node scripts/run-tests.mjs evidence",
+    "evidence": "node bin/evidence.mjs",
+    "demo:evidence": "node scripts/demo-evidence.mjs",
+    "cli": "node bin/reqora.mjs",
+    "mcp:build": "node scripts/build-mcp.mjs --check",
+    "engine:build": "node scripts/build-engine.mjs --check",
+    "engine:build:debug": "node scripts/build-engine.mjs --debug --check",
+    "tauri": "tauri",
+    "supply-chain": "node scripts/supply-chain.mjs"
+  },
+  "dependencies": {
+    "@automerge/automerge": "^3.5.0",
+    "@tauri-apps/api": "^2",
+    "lucide-react": "^1.70.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zustand": "^5.1.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^6.0.2",
+    "autoprefixer": "^10.6.2",
+    "postcss": "^8.5.32",
+    "rolldown": "^1.2.18",
+    "tailwindcss": "^3.4.19",
+    "typescript": "~6.0.3",
+    "vite": "^8.0.16"
+  }
+}

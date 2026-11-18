@@ -1,0 +1,67 @@
+# reqora.run.v1 — PR 必需检查的示例 workflow（T1.3 / T1.7）
+#
+# 这一份是「门禁真实性」的可执行证明：如果 --gate 在断言失败时仍然
+# exit 0，最后那个步骤会主动把 CI 判红。全程零账号、零后端、零外连，
+# demo 只访问 127.0.0.1 的临时回环服务。
+
+name: Evidence gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # 8 步真实场景编排 → 基线证据 → 契约漂移 → CI 变红 → agent 归因
+      - name: Offline demo (loopback only)
+        run: node scripts/demo-evidence.mjs --out artifacts
+
+      - name: Evidence + gate regression tests
+        run: node --test test/runEvidence.test.mjs test/gate.test.mjs
+
+      # 反假绿：故意用失败夹具跑 --gate，退出码必须是非 0
+      - name: Gate must be red on assertion failure
+        shell: bash
+        run: |
+          set +e
+          node bin/evidence.mjs build \
+            --from artifacts/failing.report.json \
+            --evidence artifacts/gate-check.json \
+            --gate --engine node-fetch
+          code=$?
+          set -e
+          if [ "$code" -eq 0 ]; then
+            echo "::error::门禁假绿：断言失败却返回 0"
+            exit 1
+          fi
+          echo "门禁按预期 exit $code"
+
+      - name: Evidence is readable without Reqora
+        shell: bash
+        run: |
+          jq -e '.schema == "reqora.run.v1"' artifacts/run.json
+          jq '.steps[] | select(.assertions[]?.ok == false)' artifacts/run.json
+          jq '.baseline_diff | { added_failures, contract_drift }' artifacts/run.json
+
+      - name: Agent-facing failure attribution
+        run: node bin/evidence.mjs explain --evidence artifacts/run.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reqora-run-evidence
+          path: artifacts/*.json
+          if-no-files-found: error

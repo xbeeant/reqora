@@ -1,0 +1,8 @@
+# reqwest 0.12 gates its HTTP/3 (QUIC) feature behind this cfg. It applies to
+# every crate in the workspace (desktop shell, reqora-core, reqora-send), so it
+# belongs here rather than in one package's manifest — otherwise `cargo build
+# -p reqora-send` and `tauri build` would resolve different feature sets.
+[build]
+rustflags = ["--cfg", "reqwest_unstable"]
+
+[env]

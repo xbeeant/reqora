@@ -1,0 +1,117 @@
+[package]
+name = "reqora"
+version = "0.0.1"
+description = "Reqora - a local-first, multi-protocol API workbench built with Tauri 2"
+authors = ["xbeeant"]
+license = "MIT"
+repository = "https://github.com/xbeeant/reqora"
+homepage = "https://github.com/xbeeant/reqora"
+edition = "2024"
+
+[lib]
+# The `_lib` suffix keeps the lib target name distinct from the binary target on Windows.
+name = "reqora_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+# One lockfile / one target dir for the desktop shell and the two headless
+# crates. Kept inside src-tauri/ so `.cargo/config.toml` (MSVC toolchain
+# pinning for bundled SQLite) is still discovered by every build command.
+[workspace]
+resolver = "2"
+members = ["crates/reqora-core", "crates/reqora-send"]
+
+# 共享依赖统一在此声明，成员 crate 用 `workspace = true` 引用，避免版本与
+# feature 双处维护漂移（尤其是 reqwest：代理 / TLS / 压缩 / HTTP3 行为必须
+# 在桌面壳、reqora-core 与 reqora-send 三端完全一致）。
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", default-features = false, features = [
+  "rustls-tls",
+  "charset",
+  "http2",
+  "gzip",
+  "brotli",
+  "deflate",
+  "zstd",
+  "stream",
+  "multipart",
+  # HTTP/3 (QUIC) prior-knowledge / Alt-Svc support. reqwest 0.12 exposes
+  # `http3_prior_knowledge()` as soon as this feature is on; h3/h3-quinn are
+  # pulled in transitively and quinn 0.11 is already in the lockfile.
+  "http3",
+] }
+# OAuth 2.0 PKCE (SHA-256) and AWS SigV4 (HMAC-SHA256 chain).
+sha2 = "0.10"
+hmac = "0.12"
+hex = "0.4"
+tokio = { version = "1", features = ["time", "net", "io-util", "sync", "macros", "process"] }
+# Same trait versions reqwest 0.12 uses for ClientBuilder::connector_layer.
+tower-layer = "0.3"
+tower-service = "0.3"
+# Protocol version labels in the raw response status line.
+http = "1"
+base64 = "0.22"
+# Ed25519 verification of the update manifest + AES-256-GCM at-rest vault.
+# Already a transitive dependency through rustls; declared directly so the
+# security code owns its version instead of relying on a downstream feature.
+ring = "0.17"
+thiserror = "2"
+futures-util = { version = "0.3", features = ["io"] }
+# Streaming Content-Encoding decoders used by the response-body pipeline.
+async-compression = { version = "0.4", features = ["futures-io", "gzip", "deflate", "zlib", "brotli", "zstd"] }
+# Workspace data lives in a local SQLite database (same three-tier row model
+# as the backend). `bundled` compiles SQLite from source so there is no system
+# dependency; `backup` is not needed (we checkpoint + file-copy ourselves).
+rusqlite = { version = "0.32", features = ["bundled"] }
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# The desktop shell consumes the same Tauri-free request engine that the
+# `reqora-send` sidecar is built from. No duplicate HTTP implementation.
+reqora-core = { path = "crates/reqora-core" }
+tauri = { version = "2", features = [] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+# rustls instead of native-tls: no OpenSSL system dependency, works out of the box on macOS.
+reqwest = { workspace = true }
+sha2 = { workspace = true }
+hmac = { workspace = true }
+hex = { workspace = true }
+tokio = { workspace = true }
+tower-layer = { workspace = true }
+tower-service = { workspace = true }
+http = { workspace = true }
+base64 = { workspace = true }
+ring = { workspace = true }
+thiserror = { workspace = true }
+futures-util = { workspace = true }
+async-compression = { workspace = true }
+rusqlite = { workspace = true }
+uuid = { version = "1", features = ["v4"] }
+# WebSocket debugging: rustls (webpki roots) to stay OpenSSL-free, like reqwest.
+tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }
+# Native file dialogs for import/export (no OpenSSL on macOS either).
+rfd = "0.15"
+open = "5"
+prost-reflect = { version = "0.16.5", features = ["serde"] }
+protox = "0.10.0"
+bytes = "1"
+h2 = "0.4.20"
+prost = "0.14.4"
+tokio-rustls = { version = "0.26.6", default-features = false, features = ["ring", "tls12"] }
+webpki-roots = "0.26"
+rustls = { version = "0.23.46", default-features = false, features = ["ring", "tls12", "std"] }
+sqlx = { version = "0.8.6", default-features = false, features = ["runtime-tokio", "tls-rustls-ring", "mysql", "postgres"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true

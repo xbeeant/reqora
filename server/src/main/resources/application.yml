@@ -1,0 +1,95 @@
+spring:
+  application:
+    name: reqora-server
+  datasource:
+    url: ${REQORA_DB_URL:jdbc:mysql://127.0.0.1:3306/reqora?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&allowMultiQueries=true&autoReconnect=true}
+    username: ${REQORA_DB_USER:reqora}
+    password: ${REQORA_DB_PASSWORD:change-me}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: reqora-hikari
+      maximum-pool-size: 12
+      minimum-idle: 2
+      connection-timeout: 10000
+      validation-timeout: 3000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    validateMigrationNaming: true
+  jackson:
+    default-property-inclusion: non_null
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+  web:
+    error:
+      include-message: never
+      include-stacktrace: never
+
+server:
+  port: ${REQORA_SERVER_PORT:8080}
+  shutdown: graceful
+  compression:
+    enabled: true
+
+spring.lifecycle.timeout-per-shutdown-phase: 20s
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    call-setters-on-nulls: true
+  global-config:
+    banner: false
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+app:
+  security:
+    jwt-secret: ${REQORA_JWT_SECRET:replace-with-a-random-48-byte-secret}
+    access-token-ttl: ${REQORA_ACCESS_TTL:15m}
+    refresh-token-ttl: ${REQORA_REFRESH_TTL:7d}
+  cors:
+    allowed-origins: "${REQORA_CORS_ORIGINS:http://tauri.localhost,https://tauri.localhost,tauri://localhost,http://localhost:1420,http://127.0.0.1:1420,http://localhost:5173}"
+  bootstrap:
+    admin-username: ${REQORA_ADMIN_USERNAME:admin}
+    admin-email: ${REQORA_ADMIN_EMAIL:admin@example.com}
+    admin-password: ${REQORA_ADMIN_PASSWORD:change-me-admin}
+  workspace:
+    max-bytes: ${REQORA_WORKSPACE_MAX_BYTES:5242880}
+    max-object-bytes: ${REQORA_WORKSPACE_MAX_OBJECT_BYTES:52428800}
+    # 墓碑 compaction 保留天数（软删行超过即物理回收；0 = 关闭）。
+    tombstone-retention-days: ${REQORA_WORKSPACE_TOMBSTONE_RETENTION_DAYS:90}
+    # blob 孤儿对象宽限期小时数（无引用且超过才回收；0 = 关闭）。
+    object-grace-hours: ${REQORA_WORKSPACE_OBJECT_GRACE_HOURS:168}
+    revision-keep: ${REQORA_WORKSPACE_REVISION_KEEP:50}
+  doc-site:
+    # 网页版 SPA 的公开地址，用于生成可复制的分享链接。
+    # 同源部署（dist 由本服务一起托管，见 build.gradle.kts）：留空即可，
+    # DocSiteService 会按当前请求的 origin 自动拼链接，不写死域名与端口。
+    # 需要固定公网域名，或前后端不同源时再显式指定，例如：
+    # https://docs.example.com/?api=https%3A%2F%2Fapi.example.com
+    public-base-url: ${REQORA_DOC_SITE_URL:}
+    max-bytes: ${REQORA_DOC_SITE_MAX_BYTES:2097152}
+
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  level:
+    root: DEBUG
+    com.xbeeant.reqora.server: ${REQORA_LOG_LEVEL:INFO}
+    org.springframework.security: WARN

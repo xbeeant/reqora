@@ -1,0 +1,7 @@
+.gradle/
+build/
+.env
+*.log
+out/
+.idea/
+build-javac-check/

@@ -1,0 +1,65 @@
+{
+  "_comment": "Shared dotenv parsing conformance vector. Consumed by both scripts/release-env.mjs (JS parseDotEnv) and crates/reqora-core/src/config.rs (Rust parse_dot_env). Keep both implementations in sync: a case added here must pass in both languages. NOTE: Rust filters to REQORA_* keys only; JS parseDotEnv is generic, so JS test applies the same REQORA_* filter before comparing.",
+  "cases": [
+    {
+      "name": "plain key and value",
+      "input": "REQORA_TIMEOUT_SECS=30\n",
+      "expected": [["REQORA_TIMEOUT_SECS", "30"]]
+    },
+    {
+      "name": "comments and blank lines are skipped",
+      "input": "# a comment\n\n   \nREQORA_LOG_LEVEL=debug\n",
+      "expected": [["REQORA_LOG_LEVEL", "debug"]]
+    },
+    {
+      "name": "export prefix is stripped",
+      "input": "export REQORA_LOG_LEVEL = info\n",
+      "expected": [["REQORA_LOG_LEVEL", "info"]]
+    },
+    {
+      "name": "double quotes expand escapes",
+      "input": "REQORA_MULTILINE=\"line1\\nline2\"\n",
+      "expected": [["REQORA_MULTILINE", "line1\nline2"]]
+    },
+    {
+      "name": "single quotes are literal",
+      "input": "REQORA_QUOTED='literal \\n'\n",
+      "expected": [["REQORA_QUOTED", "literal \\n"]]
+    },
+    {
+      "name": "trailing inline comment is stripped from unquoted value",
+      "input": "REQORA_RELEASE_URL_BASE=https://example.com/reqora # trailing note\n",
+      "expected": [["REQORA_RELEASE_URL_BASE", "https://example.com/reqora"]]
+    },
+    {
+      "name": "quoted value keeps internal hash",
+      "input": "REQORA_TOKEN=\"abc # def\"\n",
+      "expected": [["REQORA_TOKEN", "abc # def"]]
+    },
+    {
+      "name": "malformed line without equals is skipped",
+      "input": "broken line without equals\nREQORA_FLAG=on\n",
+      "expected": [["REQORA_FLAG", "on"]]
+    },
+    {
+      "name": "multiple keys preserve order",
+      "input": "REQORA_A=1\nREQORA_B=2\nREQORA_C=3\n",
+      "expected": [["REQORA_A", "1"], ["REQORA_B", "2"], ["REQORA_C", "3"]]
+    },
+    {
+      "name": "empty value is allowed",
+      "input": "REQORA_EMPTY=\n",
+      "expected": [["REQORA_EMPTY", ""]]
+    },
+    {
+      "name": "whitespace around key and value is trimmed",
+      "input": "   REQORA_SPACED   =   spaced value   \n",
+      "expected": [["REQORA_SPACED", "spaced value"]]
+    },
+    {
+      "name": "non-REQORA keys are filtered before comparison",
+      "input": "PATH=/usr/bin\nREQORA_KEEP=yes\nHOME=/home/user\n",
+      "expected": [["REQORA_KEEP", "yes"]]
+    }
+  ]
+}

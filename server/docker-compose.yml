@@ -1,0 +1,26 @@
+services:
+  mysql:
+    image: ${REQORA_MYSQL_IMAGE:-mysql:8.4}
+    container_name: reqora-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${REQORA_DB_ROOT_PASSWORD:-change-me-root}
+      MYSQL_DATABASE: reqora
+      MYSQL_USER: ${REQORA_DB_USER:-reqora}
+      MYSQL_PASSWORD: ${REQORA_DB_PASSWORD:-change-me}
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - reqora-mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  reqora-mysql:

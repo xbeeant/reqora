@@ -1,0 +1,142 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend (typecheck / test / build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run test:unit
+      - run: bun run build
+
+  e2e:
+    name: E2E (opt-in / network tests)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: bun install --frozen-lockfile
+      - run: bun run test:e2e
+
+  rust:
+    name: Rust unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Install Tauri system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - run: cargo test --manifest-path src-tauri/Cargo.toml --lib
+
+  backend:
+    name: Backend (Gradle + real MySQL + HTTP/SSE smoke)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: ci-root
+          MYSQL_DATABASE: reqora
+          MYSQL_USER: reqora
+          MYSQL_PASSWORD: ci-password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pci-root"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      REQORA_SERVER_PORT: 18080
+      REQORA_DB_URL: "jdbc:mysql://127.0.0.1:3306/reqora?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC"
+      REQORA_DB_USER: reqora
+      REQORA_DB_PASSWORD: ci-password
+      REQORA_JWT_SECRET: ci-only-jwt-secret-must-be-at-least-32-characters-long
+      REQORA_ACCESS_TTL: 15m
+      REQORA_REFRESH_TTL: 7d
+      REQORA_CORS_ORIGINS: "http://localhost:1420,http://localhost:5173,tauri://localhost,http://tauri.localhost"
+      REQORA_ADMIN_USERNAME: ciadmin
+      REQORA_ADMIN_EMAIL: ciadmin@example.com
+      REQORA_ADMIN_PASSWORD: ci-admin-password-123
+      BASE_URL: http://127.0.0.1:18080
+      SMOKE_ADMIN_PASSWORD: ci-admin-password-123
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: corretto
+          java-version: 21
+
+      - name: Gradle build and unit tests
+        working-directory: server
+        run: ./gradlew build
+
+      - name: Start server
+        working-directory: server
+        run: |
+          nohup ./gradlew bootRun > /tmp/reqora-server.log 2>&1 &
+          echo $! > /tmp/reqora-server.pid
+
+      - name: Wait for readiness
+        run: |
+          for i in $(seq 1 90); do
+            if curl -fsS --noproxy '*' http://127.0.0.1:18080/ready > /dev/null 2>&1; then
+              echo "server ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "server failed to become ready"
+          tail -120 /tmp/reqora-server.log
+          exit 1
+
+      - name: HTTP smoke (44 assertions)
+        working-directory: server
+        run: node scripts/smoke.mjs
+
+      - name: SSE version-change smoke
+        working-directory: server
+        run: node scripts/smoke-events.mjs
+
+      - name: Server log on failure
+        if: failure()
+        run: tail -160 /tmp/reqora-server.log
+
+      - name: Stop server
+        if: always()
+        run: |
+          if [ -f /tmp/reqora-server.pid ]; then kill "$(cat /tmp/reqora-server.pid)" || true; fi

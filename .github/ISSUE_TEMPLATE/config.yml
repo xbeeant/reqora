@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安全漏洞（私有上报）
+    url: https://github.com/xbeeant/reqora/security/advisories/new
+    about: 请勿通过公开 issue 报告安全问题，详见 SECURITY.md
+  - name: 使用问题与方案讨论
+    url: https://github.com/xbeeant/reqora/discussions
+    about: 使用方式、配置疑问与大改动方案请先在这里讨论

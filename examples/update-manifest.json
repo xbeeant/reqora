@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "expiresAt": "2027-11-12",
+  "pubDate": "2026-11-12",
+  "notes": "示例清单。用 scripts/sign-update-manifest.mjs 签名后再发布。",
+  "url": "https://example.com/downloads/Reqora-0.0.1.zip",
+  "platforms": {
+    "windows": "https://example.com/downloads/Reqora-0.0.1-setup.exe",
+    "macos": "https://example.com/downloads/Reqora-0.0.1.dmg",
+    "linux": "https://example.com/downloads/Reqora-0.0.1.AppImage"
+  }
+}

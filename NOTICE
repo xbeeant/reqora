@@ -1,0 +1,14 @@
+Reqora (「驿」)
+Copyright 2026 xbeeant
+
+This product includes software developed by xbeeant and its contributors.
+
+The user-facing product name is Reqora. Technical identifiers (Java package
+names, bundle identifier, REQORA_* environment variables, database table
+prefixes, package.json name and CLI script path) consistently use the matching
+"reqora" identifier.
+This does not imply any affiliation with, or endorsement by, any third party.
+
+Third-party dependencies are distributed under their own licenses; see
+package.json, src-tauri/Cargo.toml and server/build.gradle.kts for the
+respective dependency lists.

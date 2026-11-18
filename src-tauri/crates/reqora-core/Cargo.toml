@@ -1,0 +1,47 @@
+[package]
+name = "reqora-core"
+version = "0.0.1"
+edition = "2024"
+license = "MIT"
+description = "Reqora request engine: the Tauri-free HTTP sending chain shared by the desktop app, the CLI and the MCP server."
+publish = false
+
+# No `tauri`, no `tauri-build`, no build.rs: this crate compiles as a plain
+# rlib and can be linked by the desktop shell, a headless sidecar binary, or a
+# future CLI/web runner without pulling in WebView/IPC dependencies.
+[lib]
+name = "reqora_core"
+path = "src/lib.rs"
+
+[features]
+default = ["update"]
+# Self-update check (fetch + Ed25519 verify of the manifest). Only the desktop
+# shell uses it; the `reqora-send` sidecar depends with `default-features =
+# false` and skips compiling this module. NOTE: `ring`/`reqwest` remain hard
+# dependencies of the sending chain (auth/timing/sse), so this gate trims
+# compiled code, not the runtime dependency tree. The trust-root rules are
+# always available in `crate::trust` regardless of this feature.
+update = []
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+# reqwest 及全部共享依赖的版本 / features 统一在 workspace
+# [workspace.dependencies] 声明，保证桌面壳与 CLI 传输行为不漂移。
+reqwest = { workspace = true }
+sha2 = { workspace = true }
+hmac = { workspace = true }
+hex = { workspace = true }
+tokio = { workspace = true }
+tower-layer = { workspace = true }
+tower-service = { workspace = true }
+http = { workspace = true }
+base64 = { workspace = true }
+ring = { workspace = true }
+thiserror = { workspace = true }
+futures-util = { workspace = true }
+async-compression = { workspace = true }
+rusqlite = { workspace = true }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }

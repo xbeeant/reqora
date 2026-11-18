@@ -1,0 +1,63 @@
+name: 缺陷报告
+description: 报告一个可复现的功能缺陷
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。提交前请先搜索已有 issue。
+
+        **安全漏洞请不要用这个模板**，走仓库的私有安全公告入口，见 SECURITY.md。
+        粘贴请求、集合或日志前，请先移除 token、密码、Authorization 头等凭据。
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 发生了什么
+      description: 实际行为是什么，期望行为是什么
+      placeholder: 点击发送后……，预期应该……
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 尽量给出最小可复现的请求 / 集合 / 场景
+      placeholder: |
+        1. 新建请求 GET {{baseUrl}}/...
+        2. 切到 Debug 标签
+        3. 点击发送
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: 涉及模块
+      options:
+        - 请求构建 / 发送 / 响应
+        - SSE / NDJSON 流式
+        - WebSocket / TCP / gRPC / GraphQL
+        - 脚本 / 断言 / 测试场景
+        - Mock / 文档 / 数据模型
+        - 环境 / 变量 / 鉴权 / Cookie
+        - CLI 与 CI 报告
+        - 协作空间 / 自托管后端
+        - 界面 / 主题 / 交互
+        - 其他
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 版本与平台
+      placeholder: "0.0.1 / macOS 15 arm64"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志或截图
+      description: 可用 ⌘` 打开应用内控制台。请勿粘贴凭据。
+      render: shell
+    validations:
+      required: false

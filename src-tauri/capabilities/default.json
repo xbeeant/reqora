@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Minimal capability for the main window. All network I/O is performed by app commands in Rust, so the WebView needs no network or shell permissions.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}
