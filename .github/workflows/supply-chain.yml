@@ -1,5 +1,5 @@
 # 供应链审计与 CycloneDX SBOM —— 独立于 ci.yml 的工作流。
-# 只依赖 Node 22 内置能力 + runner 上已有的 CLI，不引入额外 npm/runtime 依赖。
+# 只依赖 Node 内置能力 + runner 上已有的 CLI，不引入额外 npm/runtime 依赖。
 name: Supply Chain (SBOM + Dependency Audit)
 
 on:
@@ -22,27 +22,31 @@ concurrency:
 jobs:
   supply-chain:
     name: Audit dependencies and generate CycloneDX SBOM
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v4
+        uses: actions/checkout@v7
         with:
-          node-version: "22"
+          persist-credentials: false
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
 
       # --ci：发现「可靠来源」的 high/critical 漏洞时以非零码失败；
       # 若 npm audit 与 OSV 均未取得可靠结果（审计不完整）同样失败。
       # 「工具不可用」只记录、不增加漏洞数，也不静默判定为通过。
       - name: Run supply-chain audit and SBOM generation
+        shell: bash
         run: node scripts/supply-chain.mjs --ci
 
       # 即使上一步失败也上传产物，便于事后查看 dependency-audit.md 定位原因。
       - name: Upload SBOM, audit report and summary
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sbom-${{ github.sha }}
           path: sbom/
@@ -52,4 +56,5 @@ jobs:
       # 纯离线校验：只检查已生成的产物结构，不需要网络。
       - name: Verify generated artifacts (offline)
         if: always()
+        shell: bash
         run: node --test test/supplyChain.test.mjs

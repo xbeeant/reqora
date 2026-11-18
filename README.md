@@ -59,7 +59,7 @@
 
 ### 安装预构建包
 
-macOS 提供 `.dmg`（universal，Apple Silicon 与 Intel 通用），Windows 提供 `.msi` / `.exe`（NSIS），Linux 提供 `.AppImage` / `.deb` / `.rpm`。请到仓库的 **Releases** 页面按平台下载，发布说明见 [.github/RELEASE_BODY.md](.github/RELEASE_BODY.md)，校验方法与产物清单随发布一起提供（`SHA256SUMS.txt`）。
+macOS 提供 `.dmg`（universal，Apple Silicon 与 Intel 通用），Windows 提供 `.exe`（NSIS），Linux 提供 `.AppImage` / `.deb` / `.rpm`。请到仓库的 **Releases** 页面按平台下载，发布说明见 [.github/RELEASE_BODY.md](.github/RELEASE_BODY.md)，校验方法与产物清单随发布一起提供（`SHA256SUMS.txt`）。
 
 > **签名提示**：若维护者未配置 Apple 签名与公证 secrets，macOS DMG 是**未签名、未公证**的，首次打开可能需要在「系统设置 → 隐私与安全性」中允许，或执行 `xattr -d com.apple.quarantine /path/to/Reqora.dmg`；Windows 安装包可能出现 SmartScreen 提示。请先核对校验和再运行。
 

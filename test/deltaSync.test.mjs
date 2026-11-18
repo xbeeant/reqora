@@ -191,9 +191,10 @@ test("hydrateBlobRows: corrupt object content fails loudly", async () => {
   payload.requests.push(requestRow("huge", 600));
   const { blobs } = await extractBlobRefs(payload);
   payload.requests[0].data = { __blob: blobs[0].hash, size: 4, encoding: "json" };
+  // i18n 文案随 navigator.language 切换（Node 与浏览器可能不同），两种语言都算通过。
   await assert.rejects(
     () => hydrateBlobRows(payload, async () => new TextEncoder().encode("不是JSON")),
-    /不是合法 JSON/,
+    /不是合法 JSON|not valid JSON/,
   );
 });
 

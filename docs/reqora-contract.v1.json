@@ -1,0 +1,717 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://reqora.dev/schemas/reqora.wire.v1.json",
+  "title": "reqora.wire.v1",
+  "description": "Reqora Rust 引擎 wire DTO 契约（由 scripts/generate-contract.mjs 从 reqora-core 源码生成）。字段命名严格遵循 serde 真实行为。",
+  "$defs": {
+    "Variables": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "KeyValue": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "FormPart": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "file": {
+          "type": "boolean"
+        },
+        "fileName": {
+          "type": "string"
+        },
+        "contentType": {
+          "type": "string"
+        }
+      }
+    },
+    "BodySpec": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "none"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "json"
+            },
+            "content": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "raw"
+            },
+            "content": {
+              "type": "string"
+            },
+            "contentType": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "formUrlEncoded"
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/KeyValue"
+              }
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "formData"
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/FormPart"
+              }
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "binary"
+            },
+            "data": {
+              "type": "string"
+            },
+            "fileName": {
+              "type": "string"
+            },
+            "contentType": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "graphql"
+            },
+            "query": {
+              "type": "string"
+            },
+            "variables": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        }
+      ]
+    },
+    "ApiKeyLocation": {
+      "type": "string",
+      "enum": [
+        "header",
+        "query"
+      ]
+    },
+    "AuthSpec": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "none"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "bearer"
+            },
+            "token": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "basic"
+            },
+            "username": {
+              "type": "string"
+            },
+            "password": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "apiKey"
+            },
+            "key": {
+              "type": "string"
+            },
+            "value": {
+              "type": "string"
+            },
+            "location": {
+              "$ref": "#/$defs/ApiKeyLocation"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "oauth2"
+            },
+            "grant": {
+              "type": "string"
+            },
+            "authUrl": {
+              "type": "string"
+            },
+            "tokenUrl": {
+              "type": "string"
+            },
+            "clientId": {
+              "type": "string"
+            },
+            "clientSecret": {
+              "type": "string"
+            },
+            "scope": {
+              "type": "string"
+            },
+            "audience": {
+              "type": "string"
+            },
+            "redirectUri": {
+              "type": "string"
+            },
+            "state": {
+              "type": "string"
+            },
+            "username": {
+              "type": "string"
+            },
+            "password": {
+              "type": "string"
+            },
+            "pkce": {
+              "type": "boolean"
+            },
+            "codeVerifier": {
+              "type": "string"
+            },
+            "code": {
+              "type": "string"
+            },
+            "accessToken": {
+              "type": "string"
+            },
+            "refreshToken": {
+              "type": "string"
+            },
+            "tokenType": {
+              "type": "string"
+            },
+            "expiresAt": {
+              "type": "number"
+            },
+            "tokenPrefix": {
+              "type": "string"
+            },
+            "clientAuth": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "awsSigV4"
+            },
+            "accessKeyId": {
+              "type": "string"
+            },
+            "secretAccessKey": {
+              "type": "string"
+            },
+            "sessionToken": {
+              "type": "string"
+            },
+            "region": {
+              "type": "string"
+            },
+            "service": {
+              "type": "string"
+            },
+            "signQuery": {
+              "type": "boolean"
+            },
+            "expiresIn": {
+              "type": "number"
+            },
+            "unsignedPayload": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "mtls"
+            },
+            "certPem": {
+              "type": "string"
+            },
+            "keyPem": {
+              "type": "string"
+            },
+            "caPem": {
+              "type": "string"
+            },
+            "p12Base64": {
+              "type": "string"
+            },
+            "passphrase": {
+              "type": "string"
+            },
+            "minTlsVersion": {
+              "type": "string"
+            },
+            "serverName": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        }
+      ]
+    },
+    "RequestSpec": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "headers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/KeyValue"
+          }
+        },
+        "query": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/KeyValue"
+          }
+        },
+        "body": {
+          "$ref": "#/$defs/BodySpec"
+        },
+        "auth": {
+          "$ref": "#/$defs/AuthSpec"
+        },
+        "variables": {
+          "$ref": "#/$defs/Variables"
+        },
+        "timeoutSecs": {
+          "type": "number"
+        },
+        "followRedirects": {
+          "type": "boolean"
+        },
+        "verifyTls": {
+          "type": "boolean"
+        },
+        "proxyUrl": {
+          "type": "string"
+        },
+        "useCookies": {
+          "type": "boolean"
+        },
+        "httpVersion": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "method",
+        "url"
+      ]
+    },
+    "ResponseHeader": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "value"
+      ]
+    },
+    "ResponsePayload": {
+      "type": "object",
+      "properties": {
+        "requestId": {
+          "type": "string"
+        },
+        "status": {
+          "type": "number"
+        },
+        "statusText": {
+          "type": "string"
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "timeMs": {
+          "type": "number"
+        },
+        "size": {
+          "type": "number"
+        },
+        "url": {
+          "type": "string"
+        },
+        "resolvedUrl": {
+          "type": "string"
+        },
+        "missingVariables": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "headers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ResponseHeader"
+          }
+        },
+        "body": {
+          "type": "string"
+        },
+        "bodyKind": {
+          "type": "string"
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "timings": {
+          "$ref": "#/$defs/ResponseTimings"
+        },
+        "rawRequest": {
+          "type": "string"
+        },
+        "rawResponse": {
+          "type": "string"
+        },
+        "bodyRef": {
+          "type": "string"
+        },
+        "contentEncoding": {
+          "type": "string"
+        },
+        "totalLines": {
+          "type": "number"
+        },
+        "inlineBytes": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "requestId",
+        "status",
+        "statusText",
+        "ok",
+        "timeMs",
+        "size",
+        "url",
+        "resolvedUrl",
+        "missingVariables",
+        "headers",
+        "body",
+        "bodyKind",
+        "truncated",
+        "timings",
+        "rawRequest",
+        "rawResponse",
+        "totalLines",
+        "inlineBytes"
+      ]
+    },
+    "BodySlice": {
+      "type": "object",
+      "properties": {
+        "bodyId": {
+          "type": "string"
+        },
+        "offset": {
+          "type": "number"
+        },
+        "length": {
+          "type": "number"
+        },
+        "total": {
+          "type": "number"
+        },
+        "encoding": {
+          "type": "string"
+        },
+        "data": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "bodyId",
+        "offset",
+        "length",
+        "total",
+        "encoding",
+        "data"
+      ],
+      "description": "A byte window into a spooled response body, returned by `read_response_body`."
+    },
+    "BodyLines": {
+      "type": "object",
+      "properties": {
+        "bodyId": {
+          "type": "string"
+        },
+        "startLine": {
+          "type": "number"
+        },
+        "lineCount": {
+          "type": "number"
+        },
+        "totalLines": {
+          "type": "number"
+        },
+        "lines": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "bodyId",
+        "startLine",
+        "lineCount",
+        "totalLines",
+        "lines"
+      ],
+      "description": "A page of decoded lines, returned by `read_response_lines`. Lines carry no newline characters; binary bodies return each line's bytes as base64."
+    },
+    "BodyInfo": {
+      "type": "object",
+      "properties": {
+        "bodyId": {
+          "type": "string"
+        },
+        "size": {
+          "type": "number"
+        },
+        "totalLines": {
+          "type": "number"
+        },
+        "bodyKind": {
+          "type": "string"
+        },
+        "contentEncoding": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "bodyId",
+        "size",
+        "totalLines",
+        "bodyKind",
+        "contentEncoding"
+      ],
+      "description": "Metadata about a spooled response body, returned by `response_body_info`."
+    },
+    "RuntimeInfo": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "timeoutSecs": {
+          "type": "number"
+        },
+        "maxResponseBytes": {
+          "type": "number"
+        },
+        "logLevel": {
+          "type": "string"
+        },
+        "workspacePath": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "version",
+        "timeoutSecs",
+        "maxResponseBytes",
+        "logLevel",
+        "workspacePath"
+      ]
+    },
+    "ResponseTimings": {
+      "type": "object",
+      "properties": {
+        "dnsMs": {
+          "type": "number"
+        },
+        "tcpMs": {
+          "type": "number"
+        },
+        "tlsMs": {
+          "type": "number"
+        },
+        "tlsMerged": {
+          "type": "boolean"
+        },
+        "serverMs": {
+          "type": "number"
+        },
+        "transferMs": {
+          "type": "number"
+        },
+        "totalMs": {
+          "type": "number"
+        },
+        "reused": {
+          "type": "boolean"
+        },
+        "protocol": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "dnsMs",
+        "tcpMs",
+        "tlsMs",
+        "tlsMerged",
+        "serverMs",
+        "transferMs",
+        "totalMs",
+        "reused",
+        "protocol"
+      ],
+      "description": "Phase breakdown returned to the UI. All durations are milliseconds."
+    }
+  }
+}

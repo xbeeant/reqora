@@ -15,22 +15,31 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: evidence-gate-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   evidence:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
         with:
-          node-version: "22"
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
 
       # 8 步真实场景编排 → 基线证据 → 契约漂移 → CI 变红 → agent 归因
       - name: Offline demo (loopback only)
+        shell: bash
         run: node scripts/demo-evidence.mjs --out artifacts
 
       - name: Evidence + gate regression tests
+        shell: bash
         run: node --test test/runEvidence.test.mjs test/gate.test.mjs
 
       # 反假绿：故意用失败夹具跑 --gate，退出码必须是非 0
@@ -53,14 +62,16 @@ jobs:
       - name: Evidence is readable without Reqora
         shell: bash
         run: |
+          set -o pipefail
           jq -e '.schema == "reqora.run.v1"' artifacts/run.json
           jq '.steps[] | select(.assertions[]?.ok == false)' artifacts/run.json
           jq '.baseline_diff | { added_failures, contract_drift }' artifacts/run.json
 
       - name: Agent-facing failure attribution
+        shell: bash
         run: node bin/evidence.mjs explain --evidence artifacts/run.json
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: reqora-run-evidence
           path: artifacts/*.json

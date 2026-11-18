@@ -6,21 +6,25 @@ on:
       - "v*"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
-permissions:
-  contents: read
-
 jobs:
   verify-version:
     name: Verify tag matches the three version files
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - name: Compare versions
+        shell: bash
         run: |
           node -e '
             const fs = require("fs");
@@ -42,6 +46,14 @@ jobs:
     needs: [verify-version]
     if: always() && (needs['verify-version'].result == 'success' || needs['verify-version'].result == 'skipped')
     runs-on: ${{ matrix.platform }}
+    timeout-minutes: 90
+    env:
+      # reqwest 0.12 exposes the `http3` feature behind an unstable cfg.
+      RUSTFLAGS: --cfg reqwest_unstable
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      REQORA_COLLAB_SERVER_URL: ${{ vars.REQORA_COLLAB_SERVER_URL }}
+      REQORA_RELEASE_URL_BASE: ${{ vars.REQORA_RELEASE_URL_BASE }}
     strategy:
       fail-fast: false
       matrix:
@@ -53,33 +65,52 @@ jobs:
           - label: linux
             platform: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@v2.2.0
         with:
-          bun-version: 1.3.6
-      - uses: actions/setup-node@v4
+          bun-version: 1.4.4
+      - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
+          package-manager-cache: false
 
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@v2.9.3
         with:
           workspaces: src-tauri
       - name: Add macOS universal targets
         if: matrix.label == 'macos'
+        shell: bash
         run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
 
       - name: Install Linux system dependencies
         if: matrix.label == 'linux'
+        shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            rpm
 
-      - run: bun install --frozen-lockfile
+      - name: Install dependencies
+        shell: bash
+        run: bun ci
 
       - name: Warn when Apple signing is not configured
         if: matrix.label == 'macos'
+        shell: bash
         env:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -94,34 +125,33 @@ jobs:
 
       - name: Build bundles (macOS universal)
         if: matrix.label == 'macos'
+        shell: bash
         env:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          REQORA_COLLAB_SERVER_URL: ${{ vars.REQORA_COLLAB_SERVER_URL }}
-          REQORA_RELEASE_URL_BASE: ${{ vars.REQORA_RELEASE_URL_BASE }}
         run: bunx tauri build --target universal-apple-darwin
 
-      - name: Build bundles (Windows / Linux)
-        if: matrix.label != 'macos'
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          REQORA_COLLAB_SERVER_URL: ${{ vars.REQORA_COLLAB_SERVER_URL }}
-          REQORA_RELEASE_URL_BASE: ${{ vars.REQORA_RELEASE_URL_BASE }}
-        run: bunx tauri build
+      # WiX v3 (used for .msi) is archived and its light.exe reliably fails on
+      # GitHub-hosted Windows runners even when VBSCRIPT is enabled. NSIS is
+      # Tauri's supported target here and produces the .exe users expect.
+      - name: Build bundles (Windows)
+        if: matrix.label == 'windows'
+        run: bunx tauri build --bundles nsis
+
+      - name: Build bundles (Linux)
+        if: matrix.label == 'linux'
+        shell: bash
+        run: bunx tauri build --bundles deb,appimage,rpm
 
       - name: Upload bundles
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bundles-${{ matrix.label }}
           if-no-files-found: error
           path: |
             src-tauri/target/**/bundle/dmg/*.dmg
-            src-tauri/target/**/bundle/msi/*.msi
             src-tauri/target/**/bundle/nsis/*.exe
             src-tauri/target/**/bundle/deb/*.deb
             src-tauri/target/**/bundle/appimage/*.AppImage
@@ -130,31 +160,46 @@ jobs:
   release:
     name: Draft GitHub release
     needs: [build]
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
         with:
-          node-version: 22
-      - uses: actions/download-artifact@v4
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
           merge-multiple: true
 
+      - name: Verify artifacts are present
+        shell: bash
+        run: |
+          if [ -z "$(ls -A artifacts)" ]; then
+            echo "::error::No release artifacts were downloaded; aborting."
+            exit 1
+          fi
+          find artifacts -maxdepth 1 -type f -printf '%f\n' | sort
+
       - name: Generate signed update manifest
+        shell: bash
         env:
           REQORA_UPDATE_SIGNING_KEY: ${{ secrets.REQORA_UPDATE_SIGNING_KEY }}
           REQORA_RELEASE_URL_BASE: ${{ vars.REQORA_RELEASE_URL_BASE }}
-          GITHUB_REF_NAME: ${{ github.ref_name }}
           REPOSITORY: ${{ github.repository }}
+          MANIFEST_PATH: ${{ runner.temp }}/reqora-manifest.json
         run: |
           if [ -z "$REQORA_UPDATE_SIGNING_KEY" ]; then
             echo "::warning::REQORA_UPDATE_SIGNING_KEY is not configured; update.json will not be published."
             exit 0
           fi
+          manifest="$MANIFEST_PATH"
           node -e '
             const fs = require("fs");
             const version = process.env.GITHUB_REF_NAME.replace(/^v/, "");
@@ -165,24 +210,26 @@ jobs:
             }
             const releaseUrl = `https://github.com/${process.env.REPOSITORY}/releases/tag/${process.env.GITHUB_REF_NAME}`;
             const url = base ? `${base}/reqora-${version}-x64-update.zip` : releaseUrl;
-            fs.writeFileSync("/tmp/reqora-manifest.json", JSON.stringify({
+            fs.writeFileSync(process.env.MANIFEST_PATH, JSON.stringify({
               version,
               pubDate: new Date().toISOString().slice(0, 10),
               notes: `Release notes: ${releaseUrl}`,
               url,
             }, null, 2));
           '
-          node scripts/sign-update-manifest.mjs --sign /tmp/reqora-manifest.json --out artifacts/update.json --days 365
+          node scripts/sign-update-manifest.mjs --sign "$manifest" --out artifacts/update.json --days 365
           node scripts/sign-update-manifest.mjs --verify artifacts/update.json
 
       - name: Generate SHA256 checksums
+        shell: bash
         run: |
+          set -o pipefail
           cd artifacts
           sha256sum * > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
       - name: Create draft release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           draft: true
           generate_release_notes: true

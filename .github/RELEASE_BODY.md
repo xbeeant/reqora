@@ -1,7 +1,7 @@
 Reqora **0.0.1** 的预构建安装包。请按平台选择：
 
 - macOS：`.dmg`（universal，Apple Silicon 与 Intel 均可）
-- Windows：`.msi` 或 `.exe`（NSIS）
+- Windows：`.exe`（NSIS 安装包）
 - Linux：`.AppImage` / `.deb` / `.rpm`
 
 下载与校验详见 [下载与校验](../docs/DOWNLOADS.md)（发布页）；`SHA256SUMS.txt` 提供全部产物的校验和，下载后建议先核对。完整变更见 [CHANGELOG.md](../CHANGELOG.md)（CHANGELOG），使用说明见 [README.md](../README.md)。

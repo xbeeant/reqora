@@ -25,7 +25,7 @@
  *   node scripts/generate-contract.mjs --check  # 只比对，漂移时退出码 1
  */
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -564,6 +564,8 @@ function main() {
       const line = current === null ? "-" : firstDiff(normalizeEol(current), normalizeEol(content));
       console.error(`drift ${rel}${line > 0 ? ` (first diff at line ${line})` : " (missing)"}`);
     } else {
+      // Fresh clones do not have docs/ yet; create the parent before writing.
+      mkdirSync(dirname(abs), { recursive: true });
       writeFileSync(abs, content);
       console.log(`wrote ${rel}`);
     }
