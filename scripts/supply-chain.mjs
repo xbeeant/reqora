@@ -156,9 +156,28 @@ function mdCell(s) {
   return String(s ?? "").replace(/\|/g, "\\|").replace(/\r?\n/g, " ").trim();
 }
 
+/**
+ * 产物不得暴露生成者的用户目录（工具 stderr 常带绝对路径）。
+ * 当前用户目录及其他账户的 home 路径统一替换为 ~。
+ */
+function redactHome(value) {
+  let text = String(value ?? "");
+  const home = os.homedir().replace(/[\\/]+$/, "");
+  if (home) {
+    const escaped = home
+      .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+      .replace(/\\\\/g, "[\\\\/]");
+    text = text.replace(new RegExp(escaped, "g"), "~");
+  }
+  // 工具输出可能来自其他账户（sudo / CI runner 等），同样脱敏。
+  text = text.replace(/(?:\/Users|\/home)\/[^/\s"'`,;)]+/g, "~");
+  text = text.replace(/[A-Za-z]:\\Users\\[^\\\s"'`,;)]+/gi, "~");
+  return text;
+}
+
 function writeText(file, content) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, content, { encoding: "utf8" });
+  fs.writeFileSync(file, redactHome(content), { encoding: "utf8" });
   return path.relative(ROOT, file).split(path.sep).join("/");
 }
 

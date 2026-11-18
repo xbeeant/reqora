@@ -9,6 +9,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { spawnSync } from "node:child_process";
@@ -94,6 +95,18 @@ test("sbom-summary.md 存在且含组件统计与复跑命令", () => {
   const md = fs.readFileSync(SUMMARY_MD, "utf8");
   assert.match(md, /组件统计/);
   assert.match(md, /node scripts\/supply-chain\.mjs/);
+});
+
+test("产物不暴露用户目录信息", () => {
+  const home = os.homedir().replace(/[\\/]+$/, "");
+  for (const file of [AUDIT_MD, SUMMARY_MD, findSbomFile()]) {
+    const text = fs.readFileSync(file, "utf8");
+    assert.ok(!text.includes(home), `${path.basename(file)} 暴露了当前用户目录 ${home}`);
+    assert.ok(
+      !/(?:\/Users|\/home)\/[^/\s"'`,;)]+/.test(text),
+      `${path.basename(file)} 暴露了用户目录`,
+    );
+  }
 });
 
 test("scripts/supply-chain.mjs --help 子进程可正常退出", () => {
