@@ -58,8 +58,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - label: macos
-            platform: macos-latest
+          # - label: macos
+          #   platform: macos-latest
           - label: windows
             platform: windows-latest
           - label: linux
